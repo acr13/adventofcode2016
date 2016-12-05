@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/acr13/adventofcode2016#readme",
   "dependencies": {
+    "blueimp-md5": "^2.6.0",
     "ramda": "^0.22.1"
   }
 }
