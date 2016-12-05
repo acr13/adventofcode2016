@@ -1,0 +1,22 @@
+{
+  "name": "adventofcode2016",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acr13/adventofcode2016.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/acr13/adventofcode2016/issues"
+  },
+  "homepage": "https://github.com/acr13/adventofcode2016#readme",
+  "dependencies": {
+    "ramda": "^0.22.1"
+  }
+}
