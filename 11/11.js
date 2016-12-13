@@ -1,14 +1,7 @@
 const R = require('ramda');
 
-const isOldMove = (visited, move) => visited.indexOf(move.join('')) !== -1;
-const isComplete = (state) => {
-  for (var i = 0; i < STATE[0].length; i++) {
-    if (STATE[0][i] === '') {
-      return false;
-    }
-  }
-
-  return true;
+const trimKnownMoves = (moves, visited) => {
+  return moves.filter(move => visited.indexOf(move.join('')) === -1);
 }
 
 const getCurrentStateOfRow = (row) => {
@@ -31,8 +24,6 @@ const getCurrentStateOfRow = (row) => {
     }
   }
 
-  // console.log(thingsOnThisRow);
-
   return thingsOnThisRow;
 }
 
@@ -47,14 +38,14 @@ const cloneState = (state) => {
   return newState;
 }
 
-const getPossibleMoves = (state, elevator) => {
+const getPossibleMoves = (state) => {
   const thingsToMove = [];
+  let elevator = state[0];
+  let dist = state[2];
 
-  // console.log(state, elevator);
-
-  for (var i = 0; i < state[elevator].length; i++) {
+  for (var i = 0; i < dist[elevator].length; i++) {
     // keep track of the (y, x) coords
-    if (state[elevator][i]) thingsToMove.push( [elevator, i] );
+    if (dist[elevator][i]) thingsToMove.push( [elevator, i] );
   }
 
   // Moves will look like this:
@@ -72,7 +63,7 @@ const getPossibleMoves = (state, elevator) => {
             ]
           );
         }
-        if (elevator < state.length - 1) {
+        if (elevator < dist.length - 1) {
           moves.push(
             [
               true, false, thingsToMove[i][0], thingsToMove[i][1], thingsToMove[i][0] + 1, thingsToMove[i][1],
@@ -90,15 +81,25 @@ const getPossibleMoves = (state, elevator) => {
         [false, true, thingsToMove[i][0], thingsToMove[i][1], thingsToMove[i][0] - 1, thingsToMove[i][1]]
       );
     }
-    if (elevator < state.length - 1) {
+    if (elevator < dist.length - 1) {
       moves.push(
         [false, false, thingsToMove[i][0], thingsToMove[i][1], thingsToMove[i][0] + 1, thingsToMove[i][1]]
       );
     }
   }
 
-  // console.log(moves);
-  return moves;
+
+  let validMoves = trimInvalidMoves(dist, moves);
+  let newMoves = trimKnownMoves(validMoves, visited);
+  let newStates = newMoves.map(move => {
+    let nextFloor = move[1] ? elevator - 1 : elevator + 1;
+    let newDist = makeMove(dist, move);
+    visited.push(newDist.join(''));
+
+    return [nextFloor, state[1] + 1, newDist];
+  });
+
+  return newStates;
 }
 
 const trimInvalidMoves = (state, possibleMoves) => {
@@ -113,8 +114,6 @@ const isValidRow = (row) => {
   const currentStateOfRow = getCurrentStateOfRow(row);
   const keys = Object.keys(currentStateOfRow);
 
-  // console.log(row);
-
   // A row is 'invalid' if we have a CHIP without its GENERATOR
   // AND there is some other generator there.
   for (var i = 0; i < keys.length; i++) {
@@ -127,8 +126,6 @@ const isValidRow = (row) => {
       }
     }
   }
-
-  console.log(row, true);
 
   return true;
 }
@@ -151,61 +148,44 @@ const makeMove = (state, move) => {
   return stateCopy;
 }
 
-const trimKnownMoves = (moves, visited) => {
-  return moves.filter(move => visited.indexOf(move.join('')) === -1);
-}
+const bfs = (state) => {
+  let moves = 0;
+  let newMoves = getPossibleMoves(state);
 
-const getShortestPath = (state, visited, elevator, moves) => {
-  console.log('*** NEW STATE **');
-  console.log(state);
-  console.log('******');
+  while (nextMove = newMoves.shift()) {
+    console.log(nextMove);
+    const [ elevator, moves, dist ] = nextMove;
+    // console.log(elevator, moves, dist);
+    if (isComplete(dist)) {
+      return moves;
+    }
 
-  // base case
-  if (isComplete(state)) {
-    return moves;
+    newMoves = newMoves.concat(getPossibleMoves(nextMove));
   }
-
-  // get all possible moves
-  let possibleMoves = getPossibleMoves(state, elevator);
-  let validMoves = trimInvalidMoves(state, possibleMoves);
-  let newMoves = trimKnownMoves(validMoves, visited);
-
-  // console.log(validMoves);
-  // console.log(newMoves);
-
-  let movesToMake = []
-
-  validMoves.map(move => {
-    let nextState = makeMove(state, move);
-    let newElevator = move[1] ? elevator - 1 : elevator + 1;
-    movesToMake.push(
-      getShortestPath(nextState, R.append(nextState.join(''), visited), newElevator, moves + 1)
-    );
-  });
-
-  return Math.min(...movesToMake);
 }
 
-const STATE = [
-  // ['', '', '', ''],
+const isComplete = (dist) => {
+  for (let i = 0; i < dist[0].length; i++) {
+    if (dist[0][i] === '') return false;
+  }
+  return true;
+}
+
+const distribution = [
+  ['', '', '', ''],
   ['', '', 'LG', ''],
   ['HG', '', '', ''],
   ['', 'HM', '', 'LM'],
 ];
-const visited = [
-  STATE.join(''),
+let visited = [
+  distribution.join(''),
 ];
-const elevator = STATE.length - 1;
-const moves = 0;
 
-// console.log(STATE);
+// [ floor, moves, state ]
+let state = [
+  distribution.length - 1, 0, distribution
+];
 
-let done = false;
-while (!done) {
-  let shortestPath = getShortestPath(STATE, visited, elevator, moves);
-  done = true;
-  // console.log(shortestPath);
-}
+console.log(state);
 
-
-
+// console.log('** Num Moves', bfs(state));
